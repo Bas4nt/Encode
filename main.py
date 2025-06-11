@@ -4,7 +4,7 @@ import logging
 import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pyrogram.errors import FloodWait, FileTooLarge
+from pyrogram.errors import FloodWait, FilePartTooBig  # Updated import
 import time
 import re
 
@@ -158,7 +158,7 @@ async def handle_video(client, message):
                 )
                 await status.edit_text("Upload complete!")
             except FloodWait as e:
-                await asyncio.sleep(e.x)
+                await asyncio.sleep(e.value)  # Updated to use e.value for FloodWait
                 await client.send_video(
                     chat_id=message.chat.id,
                     video=output_path,
@@ -166,8 +166,11 @@ async def handle_video(client, message):
                     reply_to_message_id=message.id
                 )
                 await status.edit_text("Upload complete!")
-            except FileTooLarge:
-                await status.edit_text("Error: Encoded video exceeds 2GB limit.")
+            except FilePartTooBig:
+                await status.edit_text("Error: Encoded video exceeds Telegram's file size limit.")
+            except Exception as e:
+                await status.edit_text("Error uploading video. Please try again.")
+                logger.error(f"Upload error: {e}")
             finally:
                 await cleanup_files(file_path, output_path)
 
